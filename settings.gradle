@@ -1,0 +1,8 @@
+include ':moduleB'
+include ':moduleA'
+include ':moduleinit-gradle-plugin'
+include ':moduleinit-api'
+include ':moduleinit-compiler'
+include ':moduleinit-annotation'
+include ':app'
+rootProject.name = "moduleInit"

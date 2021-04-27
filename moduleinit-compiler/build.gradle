@@ -1,0 +1,20 @@
+plugins {
+    id 'java-library'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_7
+    targetCompatibility = JavaVersion.VERSION_1_7
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation project(':moduleinit-annotation')
+
+    implementation 'com.google.auto.service:auto-service:1.0-rc5'
+    implementation 'com.squareup:javapoet:1.8.0'
+
+    //gradle5.0以上需要加上
+    annotationProcessor 'com.google.auto.service:auto-service:1.0-rc5'
+}
