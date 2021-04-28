@@ -6,7 +6,8 @@
 - 很自然能想到的优化点是:抽出一个IModuleInit接口，里面有init(Application app)和initDelay(Application app)接口方法。
 在各个模块分别写一个类实现这个方法，最后在app模块的Application或者基础业务模块BaseApplication中的onCreate（）利用反射对实现IModuleInit接口的类进行调用。
 例如
-```/**基本业务模块*/
+```
+    /**基本业务模块*/
     private static final String BaseInit = "com.strod.library.config.BaseModuleApplication";
     //app主业务模块
     private static final String AppInit = "com.strod.cloud.config.AppModuleApplication";
@@ -56,7 +57,8 @@
                 e.printStackTrace();
             }
         }
-    }```
+    }
+```
 - 但是还有一个缺点，反射的类名还需要手动配置。
 ### 本库优化
 - 本库为的就是优化手动配置的缺点，采用注解方式，利用apt编译时把配置生成，然后在ModuleInitManager类的init（）方法中，开启线程扫描class文件，对apt编译生成的类中的配置收集，然后再反射对实现IModuleInit接口的类进行调用。
