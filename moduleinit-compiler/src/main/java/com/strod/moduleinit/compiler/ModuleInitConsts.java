@@ -10,9 +10,7 @@ public class ModuleInitConsts {
 
     private static final String MODULEINIT_PACKAGE = "com.strod.moduleinit.api";
     public static final String MODULEINIT_ROOT = MODULEINIT_PACKAGE  + ".core.ModuleInitRoot";
-    public static final String MODULEINIT_GROUP = MODULEINIT_PACKAGE  + ".core.ModuleInitGroup";
-
-
+    public static final String MODULE_INIT = MODULEINIT_PACKAGE  + ".core.IModuleInit";
 
     public static final String METHOD_LOAD_INTO = "loadInto";
     public static final String PACKAGE_OF_GENERATE_FILE = "com.strod.moduleinit";

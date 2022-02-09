@@ -7,6 +7,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.strod.moduleinit.annotation.ModuleInit;
 import com.strod.moduleinit.api.core.IModuleInit;
 import com.strod.moduleinit.api.core.ModuleInitRoot;
 import com.strod.moduleinit.api.core.ModuleWareHouse;
@@ -17,6 +18,7 @@ import com.strod.moduleinit.api.utils.PackageUtils;
 
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -47,7 +49,7 @@ public class ModuleInitManager {
         return debuggable;
     }
 
-    public void init(Application application){
+    public synchronized void init(Application application){
         if (!hasInit) { //确保只初始化一次
             Log.i(TAG, "ModuleInit init start.");
             hasInit = _init(application);
@@ -60,7 +62,7 @@ public class ModuleInitManager {
         return true;
     }
 
-    private synchronized void load(Application context) throws ModuleHandlerException {
+    private void load(Application context) throws ModuleHandlerException {
         try {
             long startInit = System.currentTimeMillis();
 
@@ -97,16 +99,17 @@ public class ModuleInitManager {
 
                 Log.i(TAG, "Load root element finished, cost " + (System.currentTimeMillis() - startInit) + " ms.");
 
-                if (ModuleWareHouse.rootsIndex.size() == 0) {
-                    Log.e(TAG, "No mapping files were found, check your configuration please!");
-                }else {
-                    //
-                    invokeInit(context);
-                }
+            }
 
-                if (debuggable()) {
-                    Log.d(TAG, String.format(Locale.getDefault(), "ModuleInit has already been loaded, GroupIndex[%d]", ModuleWareHouse.rootsIndex.size()));
-                }
+            if (ModuleWareHouse.rootsIndex.size() == 0) {
+                Log.e(TAG, "No mapping files were found, check your configuration please!");
+            }else {
+                //
+                invokeInit(context);
+            }
+
+            if (debuggable()) {
+                Log.d(TAG, String.format(Locale.getDefault(), "ModuleInit has already been loaded, GroupIndex[%d]", ModuleWareHouse.rootsIndex.size()));
             }
 
         } catch (Exception e) {
@@ -118,18 +121,15 @@ public class ModuleInitManager {
         if (ModuleWareHouse.rootsIndex.isEmpty()){
             return;
         }
-        for (String className : ModuleWareHouse.rootsIndex){
+
+        for (Map.Entry<Integer, Class<? extends IModuleInit>> entry : ModuleWareHouse.rootsIndex.entrySet()) {
+            Class<? extends IModuleInit> moduleInitClass = entry.getValue();
             try {
-                Class<?> clazz = Class.forName(className);
-                IModuleInit init = (IModuleInit) clazz.newInstance();
+                IModuleInit iModuleInit = moduleInitClass.getConstructor().newInstance();
                 //调用初始化方法
-                init.init(application);
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                iModuleInit.init(application);
+            } catch (Exception ex) {
+                throw new RuntimeException("Configurable init interceptor error! name = [" + moduleInitClass.getName() + "], reason = [" + ex.getMessage() + "]");
             }
         }
     }
@@ -138,18 +138,15 @@ public class ModuleInitManager {
         if (ModuleWareHouse.rootsIndex.isEmpty()){
             return;
         }
-        for (String className : ModuleWareHouse.rootsIndex){
+
+        for (Map.Entry<Integer, Class<? extends IModuleInit>> entry : ModuleWareHouse.rootsIndex.entrySet()) {
+            Class<? extends IModuleInit> moduleInitClass = entry.getValue();
             try {
-                Class<?> clazz = Class.forName(className);
-                IModuleInit init = (IModuleInit) clazz.newInstance();
+                IModuleInit iModuleInit = moduleInitClass.getConstructor().newInstance();
                 //调用初始化方法
-                init.initDelay(application);
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                iModuleInit.initDelay(application);
+            } catch (Exception ex) {
+                throw new RuntimeException("Configurable init interceptor error! name = [" + moduleInitClass.getName() + "], reason = [" + ex.getMessage() + "]");
             }
         }
     }
@@ -185,6 +182,7 @@ public class ModuleInitManager {
     private static void register(String className) {
         if (!TextUtils.isEmpty(className)) {
             try {
+                Log.i(TAG, "register className: " + className);
                 Class<?> clazz = Class.forName(className);
                 Object obj = clazz.getConstructor().newInstance();
                 if (obj instanceof ModuleInitRoot) {

@@ -6,6 +6,8 @@ import com.strod.moduleinit.plugin.utils.ScanSetting
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
+import com.strod.moduleinit.plugin.utils.Logger
+import com.strod.moduleinit.plugin.utils.ScanUtil
 
 /**
  * transform api
@@ -62,6 +64,10 @@ class RegisterTransform extends Transform {
 
         long startTime = System.currentTimeMillis()
         boolean leftSlash = File.separator == '/'
+
+        if (!isIncremental){
+            outputProvider.deleteAll()
+        }
 
         inputs.each { TransformInput input ->
 

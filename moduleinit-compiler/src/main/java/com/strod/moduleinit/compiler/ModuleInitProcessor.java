@@ -7,6 +7,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.WildcardTypeName;
 import com.strod.moduleinit.annotation.ModuleInit;
 import com.strod.moduleinit.compiler.utils.Logger;
 import com.strod.moduleinit.compiler.utils.StringUtils;
@@ -19,8 +20,10 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
@@ -50,7 +53,8 @@ public class ModuleInitProcessor extends AbstractProcessor {
 
     private Logger logger;
 
-    private List<String> moduleInitLists;
+//    private List<String> moduleInitLists;
+    private Map<Integer, Element> moduleInits = new TreeMap<>();
     String moduleName = null;
     // Options of processor
     public static final String KEY_MODULE_NAME = "MODULE_NAME";
@@ -66,7 +70,6 @@ public class ModuleInitProcessor extends AbstractProcessor {
         types = processingEnv.getTypeUtils();
         logger = new Logger(processingEnv.getMessager());
         typeUtils = new TypeUtils(types, mElementUtils, logger);
-        moduleInitLists = new LinkedList<>();
 
         // Attempt to get user configuration [moduleName]
         Map<String, String> options = processingEnv.getOptions();
@@ -101,7 +104,7 @@ public class ModuleInitProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        moduleInitLists.clear();
+        moduleInits.clear();
         if (annotations != null && !annotations.isEmpty()) {
             Set<? extends Element> routeElements = roundEnv.getElementsAnnotatedWith(ModuleInit.class);
             try {
@@ -166,11 +169,25 @@ public class ModuleInitProcessor extends AbstractProcessor {
                     }
 
                     ModuleInit moduleInit = typeElement.getAnnotation(ModuleInit.class);
+                    int priority = moduleInit.priority();
+                    String name = moduleInit.name();
+                    logger.info(String.format("priority = %d", priority));
+                    logger.info(String.format("name = %s", name));
 
                     boolean isPrimitive = typeKind.isPrimitive();
                     logger.info(String.format("isPrimitive = %s", isPrimitive));
 
-                    moduleInitLists.add(enclosingName);
+                    Element lastModuleInit = moduleInits.get(moduleInit.priority());
+                    if (null != lastModuleInit) { // Added, throw exceptions
+                        throw new IllegalArgumentException(
+                                String.format(Locale.getDefault(), "More than one moduleInits use same priority [%d], They are [%s] and [%s].",
+                                        moduleInit.priority(),
+                                        lastModuleInit.getSimpleName(),
+                                        element.getSimpleName())
+                        );
+                    }
+
+                    moduleInits.put(moduleInit.priority(), element);
 
                     logger.info("--------------------");
 
@@ -181,33 +198,35 @@ public class ModuleInitProcessor extends AbstractProcessor {
 
             // Interface of ModuleInit.
             TypeElement type_ITollgate = mElementUtils.getTypeElement(ModuleInitConsts.MODULEINIT_ROOT);
-            TypeElement type_ITollgateGroup = mElementUtils.getTypeElement(ModuleInitConsts.MODULEINIT_GROUP);
+            TypeElement type_IModuleInit = mElementUtils.getTypeElement(ModuleInitConsts.MODULE_INIT);
 
             /**
              *  Build input type, format as :
              *
-             *  ```Map<String, String>```
+             *  ```Map<Integer, Class<? extends ITollgate>>```
              */
-            ParameterizedTypeName inputMapTypeOfRouters = ParameterizedTypeName.get(
-                    ClassName.get(List.class),
-                    ClassName.get(String.class)
+            ParameterizedTypeName inputMapTypeOfTollgate = ParameterizedTypeName.get(
+                    ClassName.get(Map.class),
+                    ClassName.get(Integer.class),
+                    ParameterizedTypeName.get(
+                            ClassName.get(Class.class),
+                            WildcardTypeName.subtypeOf(ClassName.get(type_IModuleInit))
+                    )
             );
 
             // Build input param name.
-            ParameterSpec routersParamSpec = ParameterSpec.builder(inputMapTypeOfRouters, "module").build();
+            ParameterSpec routersParamSpec = ParameterSpec.builder(inputMapTypeOfTollgate, "module").build();
 
-            // Build method loadRouters
+            // Build method : 'loadInto'
             MethodSpec.Builder loadRoutersMethodOfTollgateBuilder = MethodSpec.methodBuilder(ModuleInitConsts.METHOD_LOAD_INTO)
                     .addAnnotation(Override.class)
                     .addModifiers(PUBLIC)
                     .addParameter(routersParamSpec);
             // Generate
-            if (null != moduleInitLists && moduleInitLists.size() > 0) {
+            if (null != moduleInits && moduleInits.size() > 0) {
                 // Build method body
-                Iterator<String> iterator = moduleInitLists.iterator();
-                while (iterator.hasNext()){
-
-                    loadRoutersMethodOfTollgateBuilder.addStatement("module.add($S)", iterator.next());
+                for (Map.Entry<Integer, Element> entry : moduleInits.entrySet()) {
+                    loadRoutersMethodOfTollgateBuilder.addStatement("module.put(" + entry.getKey() + ", $T.class)", ClassName.get((TypeElement) entry.getValue()));
                 }
             }
 

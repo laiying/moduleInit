@@ -1,11 +1,10 @@
 package com.strod.moduleinit.api.core;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 /**
  * Created by laiying on 20-6-16.
  */
 public class ModuleWareHouse {
-    public static List<String> rootsIndex = new ArrayList<>();
+    public static Map<Integer, Class<? extends IModuleInit>> rootsIndex = new UniqueKeyTreeMap<>("More than one IModuleInits use same priority [%s]");
 }

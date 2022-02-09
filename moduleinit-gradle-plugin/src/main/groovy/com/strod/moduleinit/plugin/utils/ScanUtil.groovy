@@ -27,22 +27,27 @@ class ScanUtil {
             while (enumeration.hasMoreElements()) {
                 JarEntry jarEntry = (JarEntry) enumeration.nextElement()
                 String entryName = jarEntry.getName()
-                if (entryName.startsWith(ScanSetting.ROUTER_CLASS_PACKAGE_NAME)) {
-                    InputStream inputStream = file.getInputStream(jarEntry)
-                    scanClass(inputStream)
-                    inputStream.close()
-                } else if (ScanSetting.GENERATE_TO_CLASS_FILE_NAME == entryName) {
-                    // mark this jar file contains LogisticsCenter.class
-                    // After the scan is complete, we will generate register code into this file
-                    RegisterTransform.fileContainsInitClass = destFile
+                if (entryName.endsWith('.class')){
+                    if (entryName.startsWith(ScanSetting.ROUTER_CLASS_PACKAGE_NAME)) {
+                        Logger.i("entryName:"+entryName)
+                        InputStream inputStream = file.getInputStream(jarEntry)
+                        scanClass(inputStream)
+                        inputStream.close()
+                    } else if (ScanSetting.GENERATE_TO_CLASS_FILE_NAME == entryName) {
+                        Logger.i("fileContainsInitClass->destFile:"+destFile.getName())
+                        // mark this jar file contains LogisticsCenter.class
+                        // After the scan is complete, we will generate register code into this file
+                        RegisterTransform.fileContainsInitClass = destFile
+                    }
                 }
+
             }
             file.close()
         }
     }
 
     static boolean shouldProcessPreDexJar(String path) {
-        return !path.contains("com.android.support") && !path.contains("/android/m2repository")
+        return !path.contains("com.android.support") && !path.contains("/android/m2repository") && !path.startsWith("androidx")
     }
 
     static boolean shouldProcessClass(String entryName) {

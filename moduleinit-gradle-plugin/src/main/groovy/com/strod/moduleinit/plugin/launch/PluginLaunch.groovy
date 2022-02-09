@@ -6,6 +6,7 @@ import com.strod.moduleinit.plugin.core.RegisterTransform
 import com.strod.moduleinit.plugin.utils.ScanSetting
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import com.strod.moduleinit.plugin.utils.Logger
 /**
  * Simple version of AutoRegister plugin for ModuleInit
  */
@@ -25,7 +26,7 @@ public class PluginLaunch implements Plugin<Project> {
 
             //init arouter-auto-register settings
             ArrayList<ScanSetting> list = new ArrayList<>(3)
-            list.add(new ScanSetting('IModuleInit'))
+            list.add(new ScanSetting('ModuleInitRoot'))
             RegisterTransform.registerList = list
             //register this plugin
             android.registerTransform(transformImpl)

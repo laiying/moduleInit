@@ -9,7 +9,7 @@ import com.strod.moduleinit.api.core.IModuleInit;
 /**
  * Created by laiying on 2021/4/27.
  */
-@ModuleInit
+@ModuleInit(priority = 1)
 public class AModuleApplication implements IModuleInit {
     @Override
     public void init(Application application) {

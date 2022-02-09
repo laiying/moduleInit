@@ -1,6 +1,7 @@
 package com.strod.moduleinit.plugin.core
 
 import com.strod.moduleinit.plugin.utils.ScanSetting
+import com.strod.moduleinit.plugin.utils.Logger
 import org.apache.commons.io.IOUtils
 import org.objectweb.asm.*
 
